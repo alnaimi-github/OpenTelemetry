@@ -1,0 +1,43 @@
+syntax = "proto3";
+import "google/protobuf/timestamp.proto";
+
+option csharp_namespace = "RiskEvaluator";
+
+package risk;
+
+service Evaluator {
+  rpc Evaluate (RiskEvaluationRequest) returns (RiskEvaluationReply);
+}
+
+message RiskEvaluationRequest {
+  string name = 1;
+  string email = 2;
+  MembershipLevel membership = 3;
+  google.protobuf.Timestamp birthdate = 4;
+  repeated Address address = 5;
+}
+
+message Address{
+  string street = 1;
+  string city = 2;
+  string state = 3;
+  string zip_code = 4;
+  string country = 5;
+}
+
+enum MembershipLevel {
+  Regular = 0;
+  Premium = 1;
+}
+
+message RiskEvaluationReply {
+  RiskLevel risk_level = 1;
+}
+
+
+enum RiskLevel {
+  Low = 0;
+  Medium = 1;
+  High = 2;
+}
+

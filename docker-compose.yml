@@ -1,0 +1,93 @@
+﻿services:
+  clients.api:
+    image: clients.api
+    restart: always
+    build:
+      context: .
+      dockerfile: src/Clients.Api/Dockerfile
+    environment:
+        ConnectionStrings__ClientsDb: Host=clients.db;Port=5432;Database=ClientsDb;Username=postgres;Password=postgres
+        ConnectionStrings__ClientsCache: clients.cache:6379
+        ConnectionStrings__RabbitMq: amqp://guest:guest@rabbitmq:5672/
+        RiskEvaluator__Url: http://risk.evaluator.service:8080
+        Feature__PublishEventFailure: false
+    ports:  
+      - "8080:8080"
+    depends_on:
+      - clients.db
+      - rabbitmq
+      - clients.cache
+      - risk.evaluator.service
+  clients.db:
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ClientsDb
+    ports:  
+      - "5432:5432"
+  clients.cache:
+    image: redis
+    ports:
+      - "6379:6379"      
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+  accounts.service:
+    image: accounts.service
+    build:
+      context: .
+      dockerfile: src/Accounts/Dockerfile
+    restart: always
+    environment:
+        ConnectionStrings__AccountsDb: Host=accounts.db;Port=5432;Database=AccountsDb;Username=postgres;Password=postgres
+        ConnectionStrings__RabbitMq: amqp://guest:guest@rabbitmq:5672/
+    ports:
+      - "8081:8080"
+    depends_on:
+      - accounts.db
+      - rabbitmq
+  accounts.db:
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: AccountsDb
+    ports:  
+      - "5433:5432"
+  notifications.service:
+    image: notifications.service
+    restart: always
+    build:
+      context: .
+      dockerfile: src/Notifications/Dockerfile
+    environment:
+        ConnectionStrings__RabbitMq: amqp://guest:guest@rabbitmq:5672/
+    ports:
+      - "8082:8080"
+    depends_on:
+      - rabbitmq
+  risk.evaluator.service:
+    image: risk.evaluator.service
+    restart: always
+    build:
+      context: .
+      dockerfile: src/RiskEvaluator/Dockerfile
+    environment:
+      Feature__PremiumMembershipFailure: false
+    ports:
+      - "8083:8080"
+  reporting.service:
+    image: reporting.service
+    restart: always
+    build:
+      context: .
+      dockerfile: src/Reporting/Dockerfile
+    environment:
+        ConnectionStrings__RabbitMq: amqp://guest:guest@rabbitmq:5672/
+    ports:
+      - "8084:8080"
+    depends_on:
+      - rabbitmq
